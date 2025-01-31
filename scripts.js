@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const contentDiv = document.getElementById('content');
     const listSurahsButton = document.getElementById('list-surahs');
+    const audioPlayer = document.getElementById('audio-player');
 
     let surahs = [];
 
@@ -51,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const ayahItem = document.createElement('p');
             ayahItem.className = 'ayah-item';
             ayahItem.textContent = `${ayah.numberInSurah}: ${ayah.text}`;
-            ayahItem.onclick = () => displayAyah(ayah);
+            ayahItem.onclick = () => fetchAndPlayAyahAudio(surah.number, ayah.numberInSurah);
             contentDiv.appendChild(ayahItem);
         });
 
@@ -59,23 +60,44 @@ document.addEventListener('DOMContentLoaded', () => {
         backButton.textContent = 'Back to Surah List';
         backButton.onclick = () => fetchSurahs();
         contentDiv.appendChild(backButton);
+
+        const playSurahButton = document.createElement('button');
+        playSurahButton.textContent = 'Play Full Surah';
+        playSurahButton.onclick = () => fetchAndPlaySurahAudio(surah.number);
+        contentDiv.appendChild(playSurahButton);
     }
 
-    // Function to display specific Ayah
-    function displayAyah(ayah) {
-        contentDiv.innerHTML = '';
-        const ayahTitle = document.createElement('h2');
-        ayahTitle.textContent = `Ayah ${ayah.numberInSurah}`;
-        contentDiv.appendChild(ayahTitle);
+    // Function to fetch and play specific Ayah audio
+    async function fetchAndPlayAyahAudio(surahNumber, ayahNumber) {
+        try {
+            const response = await fetch(`http://api.alquran.cloud/v1/ayah/${surahNumber}:${ayahNumber}/ar.alafasy`);
+            const data = await response.json();
+            const ayah = data.data;
 
-        const ayahText = document.createElement('p');
-        ayahText.textContent = ayah.text;
-        contentDiv.appendChild(ayahText);
+            if (ayah.audio && ayah.audio.primary) {
+                audioPlayer.src = ayah.audio.primary;
+                audioPlayer.play();
+            }
+        } catch (error) {
+            console.error('Error fetching Ayah audio:', error);
+        }
+    }
 
-        const backButton = document.createElement('button');
-        backButton.textContent = 'Back to Surah';
-        backButton.onclick = () => fetchSurahContent(ayah.surah.number);
-        contentDiv.appendChild(backButton);
+    // Function to fetch and play full Surah audio
+    async function fetchAndPlaySurahAudio(surahNumber) {
+        try {
+            const response = await fetch(`http://api.quran.com/api/v4/chapter_recitations/7/${surahNumber}`);
+            const data = await response.json();
+
+            if (data.audio_file) {
+                audioPlayer.src = data.audio_file.url;
+                audioPlayer.play();
+            } else {
+                console.error('No audio file found for Surah');
+            }
+        } catch (error) {
+            console.error('Error fetching Surah audio:', error);
+        }
     }
 
     // Event listener for the "List All Surahs" button
